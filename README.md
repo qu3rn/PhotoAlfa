@@ -3,3 +3,8 @@
 
 # PhotoAlpha
 Software for quick selection, memory based export for print without modification of orginal photos.
+
+# Tracker list
+[ ] - List of files to preview
+[ ] - Compression of preview
+[ ] - Buffer of load before setting up list
