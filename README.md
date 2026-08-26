@@ -10,35 +10,6 @@ Software for quick selection, memory based export for print without modification
 [ ] - Buffer of load before setting up list
 # .
 
-An Electron application with React and TypeScript
+An Electron application with React and TypeScript + MTP/MTTP Bridge to node and temp memo.
 
-## Recommended IDE Setup
-
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-
-## Project Setup
-
-### Install
-
-```bash
-$ npm install
-```
-
-### Development
-
-```bash
-$ npm run dev
-```
-
-### Build
-
-```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
-```
+Feather use of AI just search of ides how to get trough tracklist - from mind to hand with lookup for some faster placing knowledge.
