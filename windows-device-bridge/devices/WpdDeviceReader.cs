@@ -125,4 +125,15 @@ public sealed class WpdDeviceReader : IDeviceReader
             device.Disconnect();
         }
     }
+
+    public string ReadFileAsBase64(string deviceId, string path)
+    {
+        using var stream = ReadFile(deviceId, path);
+
+        var bytes = ((MemoryStream)stream).ToArray();
+
+        var base64 = Convert.ToBase64String(bytes);
+
+        return base64;
+    }
 }
