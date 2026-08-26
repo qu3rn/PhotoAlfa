@@ -26,7 +26,7 @@ public sealed class WpdDeviceReader : IDeviceReader
         var device = MediaDeviceManager
         .Instance
         .GetDevices()?
-        .First(d => d.DeviceId == deviceId);
+        .FirstOrDefault(d => d.DeviceId == deviceId);
 
         if (device is null)
         {
@@ -37,10 +37,92 @@ public sealed class WpdDeviceReader : IDeviceReader
 
         var drives = device.GetDrives().ToList();
 
-        return drives.Select(d => new DeviceEntryDto(
+        var entries = drives.Select(d => new DeviceEntryDto(
             d?.Name ?? "",
             d?.RootDirectory?.FullName ?? "",
-            true
+            true,
+            null,
+            null
         )).ToList();
+
+        device.Disconnect();
+
+        return entries;
+    }
+
+    public IReadOnlyList<DeviceEntryDto> GetEntries(string deviceId, string path)
+    {
+        var device = MediaDeviceManager
+        .Instance
+        .GetDevices()?
+        .FirstOrDefault(d => d.DeviceId == deviceId);
+
+        if (device is null)
+        {
+            return [];
+        }
+
+        device.Connect();
+
+        try
+        {
+            var directories = device
+            .GetDirectories(path)
+            .Select(dirPath => new DeviceEntryDto(
+                dirPath,
+                Path.GetFileName(dirPath),
+                true,
+                null,
+                null
+            ));
+
+            var files = device
+            .GetFiles(path)
+            .Select(filePath => new DeviceEntryDto(
+                filePath,
+                Path.GetFileName(filePath),
+                false,
+                null,
+                null
+            ));
+
+            return directories
+            .Concat(files)
+            .ToList();
+        }
+        finally
+        {
+            device.Disconnect();
+        }
+    }
+
+    public Stream ReadFile(string deviceId, string path)
+    {
+        var device = MediaDeviceManager
+         .Instance
+         .GetDevices()?
+         .FirstOrDefault(d => d.DeviceId == deviceId);
+
+        if (device is null)
+        {
+            throw new InvalidOperationException("No device found");
+        }
+
+        device.Connect();
+
+        try
+        {
+            var stream = new MemoryStream();
+
+            device.DownloadFile(path, stream);
+
+            stream.Position = 0;
+
+            return stream;
+        }
+        finally
+        {
+            device.Disconnect();
+        }
     }
 }
