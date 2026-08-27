@@ -96,7 +96,7 @@ public sealed class WpdDeviceReader : IDeviceReader
         }
     }
 
-    public Stream ReadFile(string deviceId, string path)
+    public MemoryStream ReadFile(string deviceId, string path)
     {
         var device = MediaDeviceManager
          .Instance
