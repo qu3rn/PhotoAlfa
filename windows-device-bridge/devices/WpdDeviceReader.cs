@@ -96,7 +96,7 @@ public sealed class WpdDeviceReader : IDeviceReader
         }
     }
 
-    public Stream ReadFile(string deviceId, string path)
+    public MemoryStream ReadFile(string deviceId, string path)
     {
         var device = MediaDeviceManager
          .Instance
@@ -124,5 +124,16 @@ public sealed class WpdDeviceReader : IDeviceReader
         {
             device.Disconnect();
         }
+    }
+
+    public string ReadFileAsBase64(string deviceId, string path)
+    {
+        using var stream = ReadFile(deviceId, path);
+
+        var bytes = ((MemoryStream)stream).ToArray();
+
+        var base64 = Convert.ToBase64String(bytes);
+
+        return base64;
     }
 }

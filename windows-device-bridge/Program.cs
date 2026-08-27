@@ -1,48 +1,104 @@
-﻿using WindowsDeviceBridge.Devices;
+﻿using System.Text.Json;
+using WindowsDeviceBridge.Contracts;
+using WindowsDeviceBridge.Devices;
 
 var reader = new WpdDeviceReader();
 
-var devices = reader.GetDevices();
-var fujiPath = @"\External Memory";
-var fujiFolder = "DCIM";
-var fujiCameraName = "100_FUJI";
+var fujiPath = @"\\External Memory\DCIM\100_FUJI";
 
-if (devices.Count == 0)
+var options = new JsonSerializerOptions
 {
-    Console.WriteLine("No devices found");
-    return;
-}
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+};
 
-foreach (var device in devices)
+while (true)
 {
-    Console.WriteLine(
-        $"{device.Name} | {device.Manufacturer} | {device.Id}"
-    );
+    var line = Console.ReadLine();
 
-    var dirEntries = reader.GetRootEntries(device.Id);
-
-    foreach (var dirEntry in dirEntries)
+    if (line is null)
     {
-        Console.WriteLine($"{dirEntry.Path} | {dirEntry.Name} | {dirEntry.IsDirectory}");
+        break;
     }
 
-    var entries = reader.GetEntries(device.Id, fujiPath + @"\" + fujiFolder + @"\" + fujiCameraName);
-
-    var jpegOnly = entries.Where(entry => (
-        entry.Name.EndsWith("JPEG", StringComparison.OrdinalIgnoreCase) ||
-         entry.Name.EndsWith("JPG", StringComparison.OrdinalIgnoreCase)
-    ));
-
-    Console.WriteLine($"{jpegOnly.Count()}");
-
-    foreach (var entry in jpegOnly)
+    try
     {
-        Console.WriteLine($"{entry.Path} | {entry.Name} | {entry.IsDirectory}");
+        var request = JsonSerializer.Deserialize<BrdigeRequest>(
+            line,
+            options
+        );
+
+        if (request is null)
+        {
+            continue;
+        }
+
+        object response = request.Command switch
+        {
+            "devices" => new BridgeResponse<object>(
+                true,
+                reader.GetDevices()
+            ),
+
+            "entries" when
+                request.DeviceId is not null &&
+                request.Path is not null
+                => new BridgeResponse<object>(
+                    true,
+                    reader.GetEntries(
+                        request.DeviceId,
+                        request.Path
+                        )
+                ),
+
+            "read-file" when
+                request.DeviceId is not null &&
+                request.Path is not null
+                => ReadFile(
+                    reader,
+                    request.DeviceId,
+                    request.Path
+                ),
+
+            _ => new BridgeResponse<object>(
+                false,
+                Error: $"Unknown command: {request.Command}"
+            )
+        };
+
+        Console.WriteLine(
+            JsonSerializer.Serialize(response, options)
+        );
+    }
+    catch (Exception ex)
+    {
+        var response = new BridgeResponse<object>(
+            false,
+            Error: ex.Message
+        );
+
+        Console.WriteLine(
+            JsonSerializer.Serialize(response, options)
+        );
     }
 
-    var firstPhoto = jpegOnly.First();
+    static BridgeResponse<ImageResponse> ReadFile(
+        WpdDeviceReader reader,
+        string deviceId,
+        string path
+     )
+    {
+        using var stream = reader.ReadFile(deviceId, path);
 
-    using var stream = reader.ReadFile(device.Id, firstPhoto.Path);
+        using var memory = new MemoryStream();
 
-    Console.WriteLine($"{stream.Length} => bytes loaded");
+        stream.CopyTo(memory);
+
+        var base64 = Convert.ToBase64String(memory.ToArray());
+
+        return new BridgeResponse<ImageResponse>(
+            true,
+            new ImageResponse("image/jpeg", base64)
+        );
+    }
+    ;
 }
